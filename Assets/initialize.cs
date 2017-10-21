@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,7 +14,7 @@ public static class Utils {
 
 public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
-    public static List<GameTimer> timers = new List<GameTimer>();
+    //public static List<GameTimer> timers = new List<GameTimer>();
 
     /*public static GameTimer addTimer(float totalCountdown) {
         GameTimer timer = new GameTimer(totalCountdown);
@@ -24,34 +23,48 @@ public static class Manager {
     }*/
 }
 
-public class GameTimer {
-    float totalCountdown;
-    public GameTimer(float totalCountdown) {
-        this.totalCountdown = totalCountdown;
-    }
+//public class GameTimer {
+//    float totalCountdown;
+//    public GameTimer(float totalCountdown) {
+//        this.totalCountdown = totalCountdown;
+//    }
 
-    public void update() {
-        totalCountdown -= Time.deltaTime;
+//    public void update() {
+//        totalCountdown -= Time.deltaTime;
 
-        if (totalCountdown <= 0) {
-            Manager.timers.Remove(this);
-        }
-    }
+//        if (totalCountdown <= 0) {
+//            Manager.timers.Remove(this);
+//        }
+//    }
 
-    public Action OverridableMethod { get; set; }
+//    public Action OverridableMethod { get; set; }
 
-}
+//}
 
 public class GameNode : ScriptableObject {
     public GameObject thisNode;
     public List<GameNode> connections = new List<GameNode>();
     public int nodeIndex;
+    public bool isVirus;
     public Constants.Shape thisShape;
 
-    public void init(int nodeIndex, Constants.Shape shape) {
+    public void init(int nodeIndex, Constants.Shape shape, bool isVirus) {
         thisNode = GameObject.Find("node" + nodeIndex);
         this.nodeIndex = nodeIndex;
         thisShape = shape;
+        switch (shape) {
+            case Constants.Shape.CIRCLE:
+                thisNode.GetComponent<Renderer>().material.color = Color.blue;
+                break;
+            case Constants.Shape.SQUARE:
+                thisNode.GetComponent<Renderer>().material.color = Color.yellow;
+                break;
+
+        }
+        this.isVirus = isVirus;
+        if (this.isVirus) {
+            thisNode.GetComponent<Renderer>().material.color = Color.red;
+        }
         //thisNode.renderer.material.color = new Color(1, 1, 1);
     }
 
@@ -135,7 +148,28 @@ public class PacketStream {
     }
 
     public void sendNewPacket() {
-        GameObject packet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        var primitive = PrimitiveType.Sphere;
+        switch (originalStartingNode.thisShape) {
+            case Constants.Shape.CIRCLE:
+                primitive = PrimitiveType.Sphere;
+                break;
+            case Constants.Shape.SQUARE:
+                primitive = PrimitiveType.Cube;
+                break;
+
+        }
+
+        GameObject packet = GameObject.CreatePrimitive(primitive);
+
+        switch (originalStartingNode.thisShape) {
+            case Constants.Shape.CIRCLE:
+                packet.GetComponent<Renderer>().material.color = Color.blue;
+                break;
+            case Constants.Shape.SQUARE:
+                packet.GetComponent<Renderer>().material.color = Color.yellow;
+                break;
+        }
+
         packets.Add(packet); // head
 
         packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
@@ -172,7 +206,7 @@ public class PacketStream {
             if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
                 packetHitLastDestination();
             } else {
-                float random = UnityEngine.Random.Range(0.0f, connectionOptions.Count - 1);
+                float random = Random.Range(0.0f, connectionOptions.Count - 1);
                 currentDestination[index] = (connectionOptions[(int)(Mathf.Round(random))]);
                 packetStreamPath.Add(currentDestination[index]);
             }
@@ -206,8 +240,11 @@ public class PacketStream {
 }
 
 public class initialize : MonoBehaviour {
-    private static readonly int NUMBER_OF_NODES = 6;
+    private static readonly int NUMBER_OF_NODES = 13;
     public List<GameNode> nodes = new List<GameNode>(40);
+    public static readonly float TIME_BETWEEN_PACKET_STREAMS_IN_S = 2f;
+
+    private float timeUntilNextPacketStream = 0;
 
     public void addConnection(GameNode node1, GameNode node2, float weight) {
         node1.addConnection(node2, weight);
@@ -226,13 +263,22 @@ public class initialize : MonoBehaviour {
             { 2, Constants.Shape.CIRCLE },
             { 3, Constants.Shape.SQUARE },
             { 4, Constants.Shape.SQUARE },
-            { 5, Constants.Shape.SQUARE }
+            { 5, Constants.Shape.SQUARE },
+            { 6, Constants.Shape.SQUARE },
+            { 7, Constants.Shape.SQUARE },
+            { 8, Constants.Shape.SQUARE },
+            { 9, Constants.Shape.SQUARE },
+            { 10, Constants.Shape.SQUARE },
+            { 11, Constants.Shape.SQUARE },
+            { 12, Constants.Shape.SQUARE }
         };
+
+        int virusNode = Mathf.RoundToInt(Random.Range(0, NUMBER_OF_NODES));
 
         // find nodes
         for (int i = 0; i < NUMBER_OF_NODES; i++) {
             nodes[i] = ScriptableObject.CreateInstance<GameNode>();
-            nodes[i].init(i, shapeDict[i]);
+            nodes[i].init(i, shapeDict[i], virusNode == i);
             /*Rigidbody rb = node.GetComponent<Rigidbody>();
             System.Random random = new System.Random();
             rb.velocity = new Vector3((float)(random.NextDouble())/2, (float) (random.NextDouble())/2, (float)(random.NextDouble())/2); // range 0.0 to 1.0*/
@@ -248,9 +294,18 @@ public class initialize : MonoBehaviour {
         addConnection(0, 1, 0.25f);
         addConnection(1, 2, 0.25f);
         addConnection(2, 3, 0.5f);
-
-        addConnection(3, 4, 0.25f);
+        
         addConnection(3, 5, 0.25f);
+        addConnection(8, 6, 0.25f);
+
+        addConnection(3, 11, 0.25f);
+        addConnection(4, 8, 0.25f);
+        addConnection(8, 11, 0.25f);
+
+        addConnection(12, 9, 0.25f);
+        addConnection(7, 12, 0.25f);
+        addConnection(2, 12, 0.25f);
+        addConnection(10, 12, 0.25f);
 
 
         // create lines
@@ -263,6 +318,7 @@ public class initialize : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
+
         nodes.ForEach(delegate (GameNode node) {
             if (node) {
                 node.update();
@@ -275,13 +331,16 @@ public class initialize : MonoBehaviour {
             }
         });
 
-        Manager.timers.ForEach(delegate (GameTimer timer) {
-            timer.update();
-        });
+        //Manager.timers.ForEach(delegate (GameTimer timer) {
+        //    timer.update();
+        //});
 
-        if (Input.GetMouseButtonDown(0)) {
-            nodes[0].spawnPacketStream();
+        timeUntilNextPacketStream -= Time.deltaTime;
+
+        if (timeUntilNextPacketStream <= 0) {
+            timeUntilNextPacketStream = TIME_BETWEEN_PACKET_STREAMS_IN_S;
+            int nodeIndex = Mathf.RoundToInt(Random.Range(0, NUMBER_OF_NODES));
+            nodes[nodeIndex].spawnPacketStream();
         }
-
     }
 }

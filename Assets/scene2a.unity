@@ -124,7 +124,7 @@ GameObject:
   - component: {fileID: 49823513}
   - component: {fileID: 49823512}
   m_Layer: 0
-  m_Name: Cube
+  m_Name: node5
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -194,7 +194,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 10
+  m_RootOrder: 12
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &465106769
 Prefab:
@@ -250,7 +250,7 @@ GameObject:
   - component: {fileID: 522232823}
   - component: {fileID: 522232822}
   m_Layer: 0
-  m_Name: node0
+  m_Name: node1
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -320,7 +320,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 9
+  m_RootOrder: 8
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &543506092
 GameObject:
@@ -334,7 +334,7 @@ GameObject:
   - component: {fileID: 543506094}
   - component: {fileID: 543506093}
   m_Layer: 0
-  m_Name: Sphere (1)
+  m_Name: node0
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -404,7 +404,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 12
+  m_RootOrder: 7
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &707193404
 Prefab:
@@ -511,7 +511,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 8
+  m_RootOrder: 6
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &758714910
 GameObject:
@@ -525,7 +525,7 @@ GameObject:
   - component: {fileID: 758714912}
   - component: {fileID: 758714911}
   m_Layer: 0
-  m_Name: node2
+  m_Name: node3
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -595,7 +595,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 7
+  m_RootOrder: 10
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &982206371 stripped
 Transform:
@@ -820,7 +820,7 @@ GameObject:
   - component: {fileID: 1450483235}
   - component: {fileID: 1450483234}
   m_Layer: 0
-  m_Name: Sphere
+  m_Name: node2
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -890,7 +890,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 11
+  m_RootOrder: 9
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1491560251
 Prefab:
@@ -988,7 +988,7 @@ GameObject:
   - component: {fileID: 1865126733}
   - component: {fileID: 1865126732}
   m_Layer: 0
-  m_Name: node1
+  m_Name: node4
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1058,7 +1058,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
-  m_RootOrder: 6
+  m_RootOrder: 11
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!4 &1882725145 stripped
 Transform:
