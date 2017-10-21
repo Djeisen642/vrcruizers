@@ -25,7 +25,6 @@ public class GameNode : ScriptableObject  {
     }
 
     public void die() {
-        
     }
 
     public void createLines() {
@@ -44,30 +43,22 @@ public class GameNode : ScriptableObject  {
         });
     }
 
+    public void selected() {
+        thisNode.GetComponent<Renderer>().material.color = Color.green;
+    }
+
     public void update() {
         if (Input.GetMouseButtonDown(0)) {
-
             RaycastHit hitInfo = new RaycastHit();
-            bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hitInfo);
+            bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, Camera.main.nearClipPlane)), out hitInfo);
 
             if (hit) {
                 if (hitInfo.transform.gameObject == thisNode) {
-                    thisNode.GetComponent<Renderer>().material.color = Color.green;
-                }
-                else {
+                    selected();
                 }
             }
         }
-
-
-
     }
-
-    public void render() {
-        
-    }
-
-    
 }
 
 public class initialize : MonoBehaviour {
