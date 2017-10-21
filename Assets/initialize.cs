@@ -36,7 +36,8 @@ public class GameNode : ScriptableObject {
     }
 
     public void spawnPacketStream() {
-        PacketStream newPacketStream = ScriptableObject.CreateInstance<PacketStream>();
+        GameObject newGOPacketStream = new GameObject();
+        PacketStream newPacketStream = newGOPacketStream.AddComponent<PacketStream>();
         newPacketStream.init(this);
     }
 
@@ -77,65 +78,94 @@ public class GameNode : ScriptableObject {
     }
 }
 
-public class PacketStream : ScriptableObject {
+public class PacketStream : MonoBehaviour {
     public List<GameObject> packets = new List<GameObject>();
-    private GameNode currentDestination;
+    private List<GameNode> currentDestination = new List<GameNode>();
     private GameNode currentStartingNode;
     private List<GameNode> packetStreamPath = new List<GameNode>();
     private static int MAX_PATH_LENGTH = 5;
-    private bool hitLastDestination = false;
-    
+    private static int PACKET_LENGTH = 4;
+    private int hitLastDestinationCount = 0;
 
     public void init(GameNode startingNode) {
         // add this packet stream to list
         Manager.packetStreams.Add(this);
 
-        // add subpacks
+        for (int i = 0; i < PACKET_LENGTH; i++) {
+            currentDestination.Add(null);
+        }
+
+        packetStreamPath.Add(startingNode);
+        pickNextDestination(startingNode, 0); // first destination for leader
+
+        for (int i = 0; i < PACKET_LENGTH; i++) {
+            StartCoroutine(sendNewPacket(i));
+        }
+        
+    }
+
+    public IEnumerator sendNewPacket(int index) {
+        yield return new WaitForSeconds(index * 0.3f);
         GameObject packet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
         packets.Add(packet); // head
-        packets[packets.Count - 1].transform.position = Utils.cloneVector(startingNode.thisNode.transform.position);
-        packetStreamPath.Add(startingNode);
-        pickNextDestination(startingNode);
+        int currentIndex = packets.Count - 1;
+        if (currentIndex > 0) {
+            currentDestination[currentIndex] = currentDestination[currentIndex - 1];
+        }
+        
+        packets[currentIndex].transform.position = Utils.cloneVector(currentStartingNode.thisNode.transform.position);
     }
 
-    public void pickNextDestination(GameNode startingNode) {
-        currentStartingNode = startingNode;
-        List<GameNode> connectionOptions = new List<GameNode>(startingNode.connections);
-        // remove used paths
-        for (int i = 0; i < packetStreamPath.Count; i++) {
-            int nodeIndexValue = packetStreamPath[i].nodeIndex;
-            for (int j = 0; j < connectionOptions.Count; j++) {
-                if (connectionOptions[j].nodeIndex == nodeIndexValue) {
-                    connectionOptions.RemoveAt(j);
-                    break;
+    public void pickNextDestination(GameNode startingNode, int index) {
+        //Debug.Log(index);
+        if (index > 0) { // follower
+            if (currentDestination[index] == currentDestination[0]) {
+                packetHitLastDestination();
+            } else {
+                currentDestination[index] = currentDestination[index - 1];
+            }
+        } else { // leader
+            currentStartingNode = startingNode;
+            List<GameNode> connectionOptions = new List<GameNode>(startingNode.connections);
+            // remove used paths
+            for (int i = 0; i < packetStreamPath.Count; i++) {
+                int nodeIndexValue = packetStreamPath[i].nodeIndex;
+                for (int j = 0; j < connectionOptions.Count; j++) {
+                    if (connectionOptions[j].nodeIndex == nodeIndexValue) {
+                        connectionOptions.RemoveAt(j);
+                        break;
+                    }
                 }
             }
-        }
 
-        // no paths in options, forced to stop
-        if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
-            lastDestination();
-        } else {
-            float random = Random.Range(0.0f, connectionOptions.Count - 1);
-            currentDestination = connectionOptions[(int)(Mathf.Round(random))];
-            packetStreamPath.Add(currentDestination);
+            // no paths in options, forced to stop
+            Debug.Log(connectionOptions.Count);
+            if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
+                packetHitLastDestination();
+            } else {
+                float random = Random.Range(0.0f, connectionOptions.Count - 1);
+                currentDestination[index] = (connectionOptions[(int)(Mathf.Round(random))]);
+                packetStreamPath.Add(currentDestination[index]);
+            }
         }
+        
     }
 
-    public void lastDestination() {
-        hitLastDestination = true;
+    public void packetHitLastDestination() {
+        hitLastDestinationCount++;
     }
 
     public void update() {
-        if (!hitLastDestination) {
-            packets.ForEach(delegate (GameObject packet) {
-                packets[0].transform.position = Vector3.MoveTowards(packets[0].transform.position, currentDestination.thisNode.transform.position, 0.2f);
-                float dist = Vector3.Distance(packets[0].transform.position, currentDestination.thisNode.transform.position);
+        for (int i = 0; i < packets.Count; i++) {
+            if (i >= hitLastDestinationCount) {
+                GameObject packet = packets[i];
+                packet.transform.position = Vector3.MoveTowards(packet.transform.position, currentDestination[i].thisNode.transform.position, 0.2f);
+                float dist = Vector3.Distance(packet.transform.position, currentDestination[i].thisNode.transform.position);
                 if (Mathf.Approximately(dist, 0)) {
-                    pickNextDestination(currentDestination);
+                    pickNextDestination(currentDestination[i], i);
                 }
-            });
+            }
         }
     }
 
@@ -207,7 +237,7 @@ public class initialize : MonoBehaviour {
         });
 
         Manager.packetStreams.ForEach(delegate (PacketStream packetStream) {
-            if (packetStream) {
+            if (packetStream != null) {
                 packetStream.update();
             }
         });
