@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -14,6 +15,31 @@ public static class Utils {
 
 public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
+    public static List<GameTimer> timers = new List<GameTimer>();
+
+    /*public static GameTimer addTimer(float totalCountdown) {
+        GameTimer timer = new GameTimer(totalCountdown);
+        timers.Add(timer);
+        return timer;
+    }*/
+}
+
+public class GameTimer {
+    float totalCountdown;
+    public GameTimer(float totalCountdown) {
+        this.totalCountdown = totalCountdown;
+    }
+
+    public void update() {
+        totalCountdown -= Time.deltaTime;
+
+        if (totalCountdown <= 0) {
+            Manager.timers.Remove(this);
+        }
+    }
+
+    public Action OverridableMethod { get; set; }
+
 }
 
 public class GameNode : ScriptableObject {
@@ -36,9 +62,10 @@ public class GameNode : ScriptableObject {
     }
 
     public void spawnPacketStream() {
-        GameObject newGOPacketStream = new GameObject();
-        PacketStream newPacketStream = newGOPacketStream.AddComponent<PacketStream>();
-        newPacketStream.init(this);
+        //GameObject newGOPacketStream = new GameObject();
+        //PacketStream newPacketStream = newGOPacketStream.AddComponent<PacketStream>();
+        //newPacketStream.init(this);
+        new PacketStream(this);
     }
 
     public void die() {
@@ -78,7 +105,7 @@ public class GameNode : ScriptableObject {
     }
 }
 
-public class PacketStream : MonoBehaviour {
+public class PacketStream {
     public List<GameObject> packets = new List<GameObject>();
     private List<GameNode> currentDestination = new List<GameNode>();
     private GameNode currentStartingNode;
@@ -86,11 +113,12 @@ public class PacketStream : MonoBehaviour {
     private static int MAX_PATH_LENGTH = 5;
     private static int PACKET_LENGTH = 4;
     private int hitLastDestinationCount = 0;
+    private List<float> times = new List<float>();
 
-    public void init(GameNode startingNode) {
+    public PacketStream(GameNode startingNode) {
         // add this packet stream to list
         Manager.packetStreams.Add(this);
-
+        
         for (int i = 0; i < PACKET_LENGTH; i++) {
             currentDestination.Add(null);
         }
@@ -99,22 +127,21 @@ public class PacketStream : MonoBehaviour {
         pickNextDestination(startingNode, 0); // first destination for leader
 
         for (int i = 0; i < PACKET_LENGTH; i++) {
-            StartCoroutine(sendNewPacket(i));
+            //times.Add(i * 0.3f);
+            times.Add(i);
         }
-        
     }
 
-    public IEnumerator sendNewPacket(int index) {
-        yield return new WaitForSeconds(index * 0.3f);
+    public void sendNewPacket() {
         GameObject packet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
         packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
-        packets.Add(packet); // head
         int currentIndex = packets.Count - 1;
         if (currentIndex > 0) {
             currentDestination[currentIndex] = currentDestination[currentIndex - 1];
         }
-        
+
         packets[currentIndex].transform.position = Utils.cloneVector(currentStartingNode.thisNode.transform.position);
+        packets.Add(packet); // head
     }
 
     public void pickNextDestination(GameNode startingNode, int index) {
@@ -140,11 +167,10 @@ public class PacketStream : MonoBehaviour {
             }
 
             // no paths in options, forced to stop
-            Debug.Log(connectionOptions.Count);
             if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
                 packetHitLastDestination();
             } else {
-                float random = Random.Range(0.0f, connectionOptions.Count - 1);
+                float random = UnityEngine.Random.Range(0.0f, connectionOptions.Count - 1);
                 currentDestination[index] = (connectionOptions[(int)(Mathf.Round(random))]);
                 packetStreamPath.Add(currentDestination[index]);
             }
@@ -157,6 +183,14 @@ public class PacketStream : MonoBehaviour {
     }
 
     public void update() {
+        for (int i = times.Count - 1; i >= 0; i--) {
+            times[i] -= Time.deltaTime;//Debug.Log(Time.deltaTime);
+            if (times[i] <= 0) {
+                times.RemoveAt(i);
+                sendNewPacket();
+                Debug.Log("Hit: " + i);
+            }
+        }
         for (int i = 0; i < packets.Count; i++) {
             if (i >= hitLastDestinationCount) {
                 GameObject packet = packets[i];
@@ -168,8 +202,6 @@ public class PacketStream : MonoBehaviour {
             }
         }
     }
-
-
 }
 
 public class initialize : MonoBehaviour {
@@ -240,6 +272,10 @@ public class initialize : MonoBehaviour {
             if (packetStream != null) {
                 packetStream.update();
             }
+        });
+
+        Manager.timers.ForEach(delegate (GameTimer timer) {
+            timer.update();
         });
 
         if (Input.GetMouseButtonDown(0)) {
