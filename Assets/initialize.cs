@@ -134,6 +134,8 @@ public class PacketStream {
 
     public void sendNewPacket() {
         GameObject packet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        packets.Add(packet); // head
+
         packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
         int currentIndex = packets.Count - 1;
         if (currentIndex > 0) {
@@ -141,11 +143,9 @@ public class PacketStream {
         }
 
         packets[currentIndex].transform.position = Utils.cloneVector(currentStartingNode.thisNode.transform.position);
-        packets.Add(packet); // head
     }
 
     public void pickNextDestination(GameNode startingNode, int index) {
-        //Debug.Log(index);
         if (index > 0) { // follower
             if (currentDestination[index] == currentDestination[0]) {
                 packetHitLastDestination();
@@ -187,7 +187,12 @@ public class PacketStream {
             times[i] -= Time.deltaTime;//Debug.Log(Time.deltaTime);
             if (times[i] <= 0) {
                 times.RemoveAt(i);
-                sendNewPacket();
+
+                if (packets.Count == 0) {
+                    sendNewPacket();
+                }
+
+
                 Debug.Log("Hit: " + i);
             }
         }
