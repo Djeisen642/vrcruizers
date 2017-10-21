@@ -1,2 +1,2 @@
 # vrcruizers
-Created by: John Hutcherson
+By: Thomas Huneycutt, John Hutcherson, Zoe Liu, Jason Suttles
