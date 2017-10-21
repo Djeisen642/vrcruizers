@@ -108,6 +108,7 @@ public class GameNode : ScriptableObject {
 public class PacketStream {
     public List<GameObject> packets = new List<GameObject>();
     private List<GameNode> currentDestination = new List<GameNode>();
+    private GameNode originalStartingNode;
     private GameNode currentStartingNode;
     private List<GameNode> packetStreamPath = new List<GameNode>();
     private static int MAX_PATH_LENGTH = 5;
@@ -116,6 +117,7 @@ public class PacketStream {
     private List<float> times = new List<float>();
 
     public PacketStream(GameNode startingNode) {
+        originalStartingNode = startingNode;
         // add this packet stream to list
         Manager.packetStreams.Add(this);
         
@@ -127,8 +129,8 @@ public class PacketStream {
         pickNextDestination(startingNode, 0); // first destination for leader
 
         for (int i = 0; i < PACKET_LENGTH; i++) {
-            //times.Add(i * 0.3f);
-            times.Add(i);
+            times.Add(i * 0.15f);
+            //times.Add(i);
         }
     }
 
@@ -142,7 +144,7 @@ public class PacketStream {
             currentDestination[currentIndex] = currentDestination[currentIndex - 1];
         }
 
-        packets[currentIndex].transform.position = Utils.cloneVector(currentStartingNode.thisNode.transform.position);
+        packets[currentIndex].transform.position = Utils.cloneVector(GameObject.Find("node" + originalStartingNode.nodeIndex).transform.position);
     }
 
     public void pickNextDestination(GameNode startingNode, int index) {
@@ -184,16 +186,10 @@ public class PacketStream {
 
     public void update() {
         for (int i = times.Count - 1; i >= 0; i--) {
-            times[i] -= Time.deltaTime;//Debug.Log(Time.deltaTime);
+            times[i] -= Time.deltaTime;
             if (times[i] <= 0) {
                 times.RemoveAt(i);
-
-                if (packets.Count == 0) {
-                    sendNewPacket();
-                }
-
-
-                Debug.Log("Hit: " + i);
+                sendNewPacket();
             }
         }
         for (int i = 0; i < packets.Count; i++) {
