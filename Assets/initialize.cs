@@ -128,6 +128,7 @@ public class PacketStream {
     private static int PACKET_LENGTH = 4;
     private int hitLastDestinationCount = 0;
     private List<float> times = new List<float>();
+    private bool killGameNode;
 
     public PacketStream(GameNode startingNode) {
         originalStartingNode = startingNode;
@@ -140,6 +141,9 @@ public class PacketStream {
 
         packetStreamPath.Add(startingNode);
         pickNextDestination(startingNode, 0); // first destination for leader
+
+        // if start node is virus, then this stream is also a virus
+        killGameNode = originalStartingNode.isVirus;
 
         for (int i = 0; i < PACKET_LENGTH; i++) {
             times.Add(i * 0.15f);
@@ -206,8 +210,11 @@ public class PacketStream {
             if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
                 packetHitLastDestination();
             } else {
+                if (!killGameNode && currentDestination[index] != null) {
+                    killGameNode = currentDestination[index].isVirus;
+                }
                 float random = Random.Range(0.0f, connectionOptions.Count - 1);
-                currentDestination[index] = (connectionOptions[(int)(Mathf.Round(random))]);
+                currentDestination[index] = (connectionOptions[Mathf.RoundToInt(random)]);
                 packetStreamPath.Add(currentDestination[index]);
             }
         }
@@ -226,15 +233,22 @@ public class PacketStream {
                 sendNewPacket();
             }
         }
-        for (int i = 0; i < packets.Count; i++) {
-            if (i >= hitLastDestinationCount) {
-                GameObject packet = packets[i];
-                packet.transform.position = Vector3.MoveTowards(packet.transform.position, currentDestination[i].thisNode.transform.position, 0.2f);
-                float dist = Vector3.Distance(packet.transform.position, currentDestination[i].thisNode.transform.position);
-                if (Mathf.Approximately(dist, 0)) {
-                    pickNextDestination(currentDestination[i], i);
+        //Debug.Log("packetCount" + packets.Count);
+        //Debug.Log("hitLastDestinationCount" + hitLastDestinationCount);
+        if (hitLastDestinationCount == 0 || packets.Count > hitLastDestinationCount) {
+            for (int i = 0; i < packets.Count; i++) {
+                if (i >= hitLastDestinationCount) {
+                    GameObject packet = packets[i];
+                    packet.transform.position = Vector3.MoveTowards(packet.transform.position, currentDestination[i].thisNode.transform.position, 0.2f);
+                    float dist = Vector3.Distance(packet.transform.position, currentDestination[i].thisNode.transform.position);
+                    if (Mathf.Approximately(dist, 0)) {
+                        pickNextDestination(currentDestination[i], i);
+                    }
                 }
             }
+        } else if (killGameNode) {
+            Debug.Log("Boom");
+            packetStreamPath[packetStreamPath.Count - 1].selected();
         }
     }
 }
