@@ -6,9 +6,19 @@ public class Constants {
     public enum Shape { SQUARE, CIRCLE, PYRAMID };
 }
 
-public class GameNode : ScriptableObject  {
+public static class Utils {
+    public static Vector3 cloneVector(Vector3 orig) {
+        return new Vector3(orig.x, orig.y, orig.z);
+    }
+}
+
+public static class Manager {
+    public static List<PacketStream> packetStreams = new List<PacketStream>();
+}
+
+public class GameNode : ScriptableObject {
     public GameObject thisNode;
-    public List<GameNode> connections;
+    public List<GameNode> connections = new List<GameNode>();
     public int nodeIndex;
     public Constants.Shape thisShape;
 
@@ -16,23 +26,28 @@ public class GameNode : ScriptableObject  {
         thisNode = GameObject.Find("node" + nodeIndex);
         this.nodeIndex = nodeIndex;
         thisShape = shape;
-        connections = new List<GameNode>();
         //thisNode.renderer.material.color = new Color(1, 1, 1);
     }
 
-    public void addConnection(GameNode newConnection) {
+    public void addConnection(GameNode newConnection, float weight) {
         connections.Add(newConnection);
+
+        // TODO add weight
+    }
+
+    public void spawnPacketStream() {
+        PacketStream newPacketStream = ScriptableObject.CreateInstance<PacketStream>();
+        newPacketStream.init(this);
     }
 
     public void die() {
-        
     }
 
     public void createLines() {
         connections.ForEach(delegate (GameNode connection) {
             if (connection.nodeIndex < nodeIndex) {
                 Vector3 finalPosition = connection.thisNode.transform.position;
-                
+
                 GameObject line = new GameObject();
                 LineRenderer newLine = line.AddComponent<LineRenderer>();
                 newLine.startWidth = 0.3f;
@@ -44,54 +59,112 @@ public class GameNode : ScriptableObject  {
         });
     }
 
+    public void selected() {
+        thisNode.GetComponent<Renderer>().material.color = Color.green;
+    }
+
     public void update() {
         if (Input.GetMouseButtonDown(0)) {
-
             RaycastHit hitInfo = new RaycastHit();
-            bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(Input.mousePosition), out hitInfo);
+            bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, Camera.main.nearClipPlane)), out hitInfo);
 
             if (hit) {
                 if (hitInfo.transform.gameObject == thisNode) {
-                    thisNode.GetComponent<Renderer>().material.color = Color.green;
+                    selected();
                 }
-                else {
+            }
+        }
+    }
+}
+
+public class PacketStream : ScriptableObject {
+    public List<GameObject> packets = new List<GameObject>();
+    private GameNode currentDestination;
+    private GameNode currentStartingNode;
+    private List<GameNode> packetStreamPath = new List<GameNode>();
+    private static int MAX_PATH_LENGTH = 5;
+    private bool hitLastDestination = false;
+    
+
+    public void init(GameNode startingNode) {
+        // add this packet stream to list
+        Manager.packetStreams.Add(this);
+
+        // add subpacks
+        GameObject packet = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
+        packets.Add(packet); // head
+        packets[packets.Count - 1].transform.position = Utils.cloneVector(startingNode.thisNode.transform.position);
+        packetStreamPath.Add(startingNode);
+        pickNextDestination(startingNode);
+    }
+
+    public void pickNextDestination(GameNode startingNode) {
+        currentStartingNode = startingNode;
+        List<GameNode> connectionOptions = new List<GameNode>(startingNode.connections);
+        // remove used paths
+        for (int i = 0; i < packetStreamPath.Count; i++) {
+            int nodeIndexValue = packetStreamPath[i].nodeIndex;
+            for (int j = 0; j < connectionOptions.Count; j++) {
+                if (connectionOptions[j].nodeIndex == nodeIndexValue) {
+                    connectionOptions.RemoveAt(j);
+                    break;
                 }
             }
         }
 
-
-
+        // no paths in options, forced to stop
+        if (connectionOptions.Count == 0 || packetStreamPath.Count >= MAX_PATH_LENGTH) {
+            lastDestination();
+        } else {
+            float random = Random.Range(0.0f, connectionOptions.Count - 1);
+            currentDestination = connectionOptions[(int)(Mathf.Round(random))];
+            packetStreamPath.Add(currentDestination);
+        }
     }
 
-    public void render() {
-        
+    public void lastDestination() {
+        hitLastDestination = true;
     }
 
-    
+    public void update() {
+        if (!hitLastDestination) {
+            packets.ForEach(delegate (GameObject packet) {
+                packets[0].transform.position = Vector3.MoveTowards(packets[0].transform.position, currentDestination.thisNode.transform.position, 0.2f);
+                float dist = Vector3.Distance(packets[0].transform.position, currentDestination.thisNode.transform.position);
+                if (Mathf.Approximately(dist, 0)) {
+                    pickNextDestination(currentDestination);
+                }
+            });
+        }
+    }
+
+
 }
 
 public class initialize : MonoBehaviour {
-    private static readonly int NUMBER_OF_NODES = 3;
+    private static readonly int NUMBER_OF_NODES = 6;
     public List<GameNode> nodes = new List<GameNode>(40);
 
-    public void addConnection(GameNode node1, GameNode node2) {
-        node1.addConnection(node2);
-        node2.addConnection(node1);
+    public void addConnection(GameNode node1, GameNode node2, float weight) {
+        node1.addConnection(node2, weight);
+        node2.addConnection(node1, weight);
     }
 
-    public void addConnection(int index1, int index2) {
-        addConnection(nodes[index1], nodes[index2]);
+    public void addConnection(int index1, int index2, float weight) {
+        addConnection(nodes[index1], nodes[index2], weight);
     }
 
     // Use this for initialization
     void Start() {
         Dictionary<int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
             { 0, Constants.Shape.CIRCLE },
-            { 1, Constants.Shape.SQUARE },
-            { 2, Constants.Shape.SQUARE }
+            { 1, Constants.Shape.CIRCLE },
+            { 2, Constants.Shape.CIRCLE },
+            { 3, Constants.Shape.SQUARE },
+            { 4, Constants.Shape.SQUARE },
+            { 5, Constants.Shape.SQUARE }
         };
-        List<int> circleShapes = new List<int>() { 0 };
-        List<int> squareShapes = new List<int>() { 1, 2 };
 
         // find nodes
         for (int i = 0; i < NUMBER_OF_NODES; i++) {
@@ -107,7 +180,15 @@ public class initialize : MonoBehaviour {
         //rb.velocity = new Vector3(0, 0.5f, 0);
 
         // add some connection
-        addConnection(0, 1);
+
+        // connect spheres
+        addConnection(0, 1, 0.25f);
+        addConnection(1, 2, 0.25f);
+        addConnection(2, 3, 0.5f);
+
+        addConnection(3, 4, 0.25f);
+        addConnection(3, 5, 0.25f);
+
 
         // create lines
         nodes.ForEach(delegate (GameNode node) {
@@ -116,13 +197,24 @@ public class initialize : MonoBehaviour {
             }
         });
     }
-	
-	// Update is called once per frame
-	void Update () {
+
+    // Update is called once per frame
+    void Update() {
         nodes.ForEach(delegate (GameNode node) {
             if (node) {
                 node.update();
             }
         });
+
+        Manager.packetStreams.ForEach(delegate (PacketStream packetStream) {
+            if (packetStream) {
+                packetStream.update();
+            }
+        });
+
+        if (Input.GetMouseButtonDown(0)) {
+            nodes[0].spawnPacketStream();
+        }
+
     }
 }
