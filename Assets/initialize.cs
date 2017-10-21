@@ -152,18 +152,23 @@ public class PacketStream {
     }
 
     public void sendNewPacket() {
-        var primitive = PrimitiveType.Sphere;
-        switch (originalStartingNode.thisShape) {
-            case Constants.Shape.CIRCLE:
-                primitive = PrimitiveType.Sphere;
-                break;
-            case Constants.Shape.SQUARE:
-                primitive = PrimitiveType.Cube;
-                break;
+//        var primitive = PrimitiveType.Sphere;
+//        switch (originalStartingNode.thisShape) {
+//            case Constants.Shape.CIRCLE:
+//                primitive = PrimitiveType.Sphere;
+//                break;
+//            case Constants.Shape.SQUARE:
+//                primitive = PrimitiveType.Cube;
+//                break;
+//
+//        }
 
-        }
 
-        GameObject packet = GameObject.CreatePrimitive(primitive);
+		GameObject packet = new GameObject();
+		MeshFilter meshFilter = packet.AddComponent<MeshFilter>();
+		meshFilter.sharedMesh = originalStartingNode.thisNode.GetComponent<MeshFilter>().mesh;
+		MeshRenderer meshRenderer = packet.AddComponent<MeshRenderer>();
+		meshRenderer.material = originalStartingNode.thisNode.GetComponent<Renderer>().material;
 
         switch (originalStartingNode.thisShape) {
             case Constants.Shape.CIRCLE:
@@ -176,7 +181,7 @@ public class PacketStream {
 
         packets.Add(packet); // head
 
-        packet.transform.localScale -= new Vector3(0.5f, 0.5f, 0.5f);
+        packet.transform.localScale += new Vector3(1f, 1f, 1f);
         int currentIndex = packets.Count - 1;
         if (currentIndex > 0) {
             currentDestination[currentIndex] = currentDestination[currentIndex - 1];
