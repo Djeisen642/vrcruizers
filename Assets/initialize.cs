@@ -173,6 +173,7 @@ public class PacketStream {
     private List<GameNode> packetStreamPath = new List<GameNode>();
     private static int MAX_PATH_LENGTH = 5;
     private static int PACKET_LENGTH = 4;
+    private static float PACKET_SPEED = 0.1f;
     private int hitLastDestinationCount = 0;
     private List<float> times = new List<float>();
     private bool killGameNode;
@@ -279,7 +280,7 @@ public class PacketStream {
             for (int i = 0; i < packets.Count; i++) {
                 if (i >= hitLastDestinationCount) {
                     GameObject packet = packets[i];
-                    packet.transform.position = Vector3.MoveTowards(packet.transform.position, currentDestination[i].thisNode.transform.position, 0.2f);
+                    packet.transform.position = Vector3.MoveTowards(packet.transform.position, currentDestination[i].thisNode.transform.position, PACKET_SPEED);
                     float dist = Vector3.Distance(packet.transform.position, currentDestination[i].thisNode.transform.position);
                     if (Mathf.Approximately(dist, 0)) {
                         pickNextDestination(currentDestination[i], i);
@@ -300,7 +301,7 @@ public class PacketStream {
 }
 
 public class initialize : MonoBehaviour {
-    public static readonly float TIME_BETWEEN_PACKET_STREAMS_IN_S = 2f;
+    public static readonly float TIME_BETWEEN_PACKET_STREAMS_IN_S = 1f;
 
     private float timeUntilNextPacketStream = 0;
 
