@@ -14,6 +14,8 @@ public static class Utils {
 
 public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
+    public static readonly int NUMBER_OF_NODES = 13;
+    public static List<GameNode> nodes = new List<GameNode>(Manager.NUMBER_OF_NODES);
     //public static List<GameTimer> timers = new List<GameTimer>();
 
     /*public static GameTimer addTimer(float totalCountdown) {
@@ -22,6 +24,7 @@ public static class Manager {
         return timer;
     }*/
 }
+
 
 //public class GameTimer {
 //    float totalCountdown;
@@ -74,6 +77,10 @@ public class GameNode : ScriptableObject {
         // TODO add weight
     }
 
+    public void removeConnection(GameNode oldConnection) {
+        connections.Remove(oldConnection);
+    }
+
     public void spawnPacketStream() {
         //GameObject newGOPacketStream = new GameObject();
         //PacketStream newPacketStream = newGOPacketStream.AddComponent<PacketStream>();
@@ -82,6 +89,21 @@ public class GameNode : ScriptableObject {
     }
 
     public void die() {
+        // remove connections
+        for(int i = 0; i < connections.Count; i++) {
+            connections[i].removeConnection(this);
+        }
+
+        // explode
+
+
+        thisNode.GetComponent<Renderer>().material.color = Color.black;
+        // remove node
+        Manager.nodes.Remove(this);
+    }
+
+    public void playerKilled() {
+
     }
 
     public void createLines() {
@@ -233,8 +255,6 @@ public class PacketStream {
                 sendNewPacket();
             }
         }
-        //Debug.Log("packetCount" + packets.Count);
-        //Debug.Log("hitLastDestinationCount" + hitLastDestinationCount);
         if (hitLastDestinationCount == 0 || packets.Count > hitLastDestinationCount) {
             for (int i = 0; i < packets.Count; i++) {
                 if (i >= hitLastDestinationCount) {
@@ -246,16 +266,24 @@ public class PacketStream {
                     }
                 }
             }
-        } else if (killGameNode) {
-            Debug.Log("Boom");
-            packetStreamPath[packetStreamPath.Count - 1].selected();
+        } else {
+            if (killGameNode) {
+                // kill dying node
+                packetStreamPath[packetStreamPath.Count - 1].die();
+            }
+            packets.ForEach(delegate (GameObject packet) {
+                GameObject.Destroy(packet);
+            });
+            Manager.packetStreams.Remove(this);
+
+            //Debug.Log("Boom");
+
         }
     }
 }
 
 public class initialize : MonoBehaviour {
-    private static readonly int NUMBER_OF_NODES = 13;
-    public List<GameNode> nodes = new List<GameNode>(40);
+    //public List<GameNode> nodes = new List<GameNode>(40);
     public static readonly float TIME_BETWEEN_PACKET_STREAMS_IN_S = 2f;
 
     private float timeUntilNextPacketStream = 0;
@@ -266,7 +294,8 @@ public class initialize : MonoBehaviour {
     }
 
     public void addConnection(int index1, int index2, float weight) {
-        addConnection(nodes[index1], nodes[index2], weight);
+        addConnection(Manager.nodes[index1], Manager.nodes[index2], weight);
+
     }
 
     // Use this for initialization
@@ -287,12 +316,17 @@ public class initialize : MonoBehaviour {
             { 12, Constants.Shape.SQUARE }
         };
 
-        int virusNode = Mathf.RoundToInt(Random.Range(0, NUMBER_OF_NODES));
+        int virusNode = Mathf.RoundToInt(Random.Range(0, Manager.NUMBER_OF_NODES - 1));
+
+        // create nodes
+        for (int i = 0; i < Manager.NUMBER_OF_NODES; i++) {
+            Manager.nodes.Add(null);
+        }
 
         // find nodes
-        for (int i = 0; i < NUMBER_OF_NODES; i++) {
-            nodes[i] = ScriptableObject.CreateInstance<GameNode>();
-            nodes[i].init(i, shapeDict[i], virusNode == i);
+        for (int i = 0; i < Manager.NUMBER_OF_NODES; i++) {
+            Manager.nodes[i] = ScriptableObject.CreateInstance<GameNode>();
+            Manager.nodes[i].init(i, shapeDict[i], virusNode == i);
             /*Rigidbody rb = node.GetComponent<Rigidbody>();
             System.Random random = new System.Random();
             rb.velocity = new Vector3((float)(random.NextDouble())/2, (float) (random.NextDouble())/2, (float)(random.NextDouble())/2); // range 0.0 to 1.0*/
@@ -323,7 +357,7 @@ public class initialize : MonoBehaviour {
 
 
         // create lines
-        nodes.ForEach(delegate (GameNode node) {
+        Manager.nodes.ForEach(delegate (GameNode node) {
             if (node) {
                 node.createLines();
             }
@@ -333,7 +367,7 @@ public class initialize : MonoBehaviour {
     // Update is called once per frame
     void Update() {
 
-        nodes.ForEach(delegate (GameNode node) {
+        Manager.nodes.ForEach(delegate (GameNode node) {
             if (node) {
                 node.update();
             }
@@ -353,8 +387,8 @@ public class initialize : MonoBehaviour {
 
         if (timeUntilNextPacketStream <= 0) {
             timeUntilNextPacketStream = TIME_BETWEEN_PACKET_STREAMS_IN_S;
-            int nodeIndex = Mathf.RoundToInt(Random.Range(0, NUMBER_OF_NODES));
-            nodes[nodeIndex].spawnPacketStream();
+            int nodeIndex = Mathf.RoundToInt(Random.Range(0, Manager.nodes.Count));
+            Manager.nodes[nodeIndex].spawnPacketStream();
         }
     }
 }
