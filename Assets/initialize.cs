@@ -100,6 +100,10 @@ public class GameNode : ScriptableObject {
         thisNode.GetComponent<Renderer>().material.color = Color.black;
         // remove node
         Manager.nodes.Remove(this);
+
+		Camera camera = Camera.main;
+		float shade = 0.5f * Manager.nodes.Count / Manager.NUMBER_OF_NODES + 0.5f;
+		camera.backgroundColor = new Color(shade, shade, shade);
     }
 
     public void playerKilled() {
