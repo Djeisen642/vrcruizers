@@ -132,16 +132,15 @@ public class GameNode : ScriptableObject {
 
     public void update() {
         if (Input.GetMouseButtonDown(0)) {
+            GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
+
             Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
             RaycastHit hit;
             if (Physics.Raycast(ray, out hit)) {
                 if (hit.transform.gameObject == thisNode) {
-                    Debug.Log("I'm looking at " + hit.transform.name);
                     selected();
                 }
             }
-            else
-                Debug.Log("I'm looking at nothing!");
         }
     }
 }
@@ -281,14 +280,12 @@ public class PacketStream {
             if (killGameNode) {
                 // kill dying node
                 packetStreamPath[packetStreamPath.Count - 1].die();
+                GameObject.Find("sfxExplosion").GetComponent<AudioSource>().Play();
             }
             packets.ForEach(delegate (GameObject packet) {
                 GameObject.Destroy(packet);
             });
             Manager.packetStreams.Remove(this);
-
-            //Debug.Log("Boom");
-
         }
     }
 }
