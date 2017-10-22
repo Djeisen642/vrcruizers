@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class Constants {
     public enum Shape { SQUARE, CIRCLE, PYRAMID };
+	public enum GameState { ONGOING, WIN, GAMEOVER };
 }
 
 public static class Utils {
@@ -16,33 +17,36 @@ public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
     public static readonly int NUMBER_OF_NODES = 13;
     public static List<GameNode> nodes = new List<GameNode>(Manager.NUMBER_OF_NODES);
-    //public static List<GameTimer> timers = new List<GameTimer>();
+	public static readonly float LOSS_CONDITION = 0.5f;
+	public static Constants.GameState gameState = Constants.GameState.ONGOING;
+	public static int DEAD_NODE_LOSS_CONDITION = Mathf.RoundToInt(LOSS_CONDITION * NUMBER_OF_NODES);
 
-    /*public static GameTimer addTimer(float totalCountdown) {
-        GameTimer timer = new GameTimer(totalCountdown);
-        timers.Add(timer);
-        return timer;
-    }*/
+
+	public static void checkLossAndDealWithIt() {
+		int deadNodes = NUMBER_OF_NODES - nodes.Count;
+		if (deadNodes >= Manager.DEAD_NODE_LOSS_CONDITION) { // lost
+			Debug.Log("Lost");
+			gameState = Constants.GameState.GAMEOVER;
+		} else {
+			float percentageRemaining = LOSS_CONDITION * nodes.Count / NUMBER_OF_NODES;
+			Debug.Log ("Check percentage " + percentageRemaining * LOSS_CONDITION);
+			Camera camera = Camera.main;
+			float shade = percentageRemaining + 0.5f;
+			camera.backgroundColor = new Color(shade, shade, shade);
+		}
+			
+	}
+
+	public static void checkWinAndDealWithIt(GameNode selectedGameNode) {
+		Debug.Log (selectedGameNode.isVirus);
+		if (selectedGameNode.isVirus) {
+			Debug.Log("Picked Correctly");
+			gameState = Constants.GameState.WIN;
+		} else {
+			Debug.Log("Bad pick");
+		}
+	}
 }
-
-
-//public class GameTimer {
-//    float totalCountdown;
-//    public GameTimer(float totalCountdown) {
-//        this.totalCountdown = totalCountdown;
-//    }
-
-//    public void update() {
-//        totalCountdown -= Time.deltaTime;
-
-//        if (totalCountdown <= 0) {
-//            Manager.timers.Remove(this);
-//        }
-//    }
-
-//    public Action OverridableMethod { get; set; }
-
-//}
 
 public class GameNode : ScriptableObject {
     public GameObject thisNode;
@@ -101,9 +105,7 @@ public class GameNode : ScriptableObject {
         // remove node
         Manager.nodes.Remove(this);
 
-		Camera camera = Camera.main;
-		float shade = 0.5f * Manager.nodes.Count / Manager.NUMBER_OF_NODES + 0.5f;
-		camera.backgroundColor = new Color(shade, shade, shade);
+		Manager.checkLossAndDealWithIt();
     }
 
     public void playerKilled() {
@@ -131,18 +133,7 @@ public class GameNode : ScriptableObject {
     }
 
     public void update() {
-        if (Input.GetMouseButtonDown(0)) {
-            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
-            RaycastHit hit;
-            if (Physics.Raycast(ray, out hit)) {
-                if (hit.transform.gameObject == thisNode) {
-                    Debug.Log("I'm looking at " + hit.transform.name);
-                    selected();
-                }
-            }
-            else
-                Debug.Log("I'm looking at nothing!");
-        }
+		Manager.checkWinAndDealWithIt(this);
     }
 }
 
@@ -377,12 +368,34 @@ public class initialize : MonoBehaviour {
 
     // Update is called once per frame
     void Update() {
-
-        Manager.nodes.ForEach(delegate (GameNode node) {
-            if (node) {
-                node.update();
-            }
-        });
+		if (Manager.gameState != Constants.GameState.ONGOING) {
+			// TODO GAMEOVER banner
+			// TODO Winner banner
+			return;
+		}
+		GameObject selectedObject = null;
+		if (Input.GetMouseButtonDown(0)) {
+			Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
+			RaycastHit hit;
+			if (Physics.Raycast(ray, out hit)) {
+				selectedObject = hit.transform.gameObject;
+//				if (hit.transform.gameObject == thisNode) {
+//					Debug.Log("I'm looking at " + hit.transform.name);
+//					selected();
+//				}
+			}
+			else
+				Debug.Log("I'm looking at nothing!");
+			
+			if (selectedObject != null) {
+				Manager.nodes.ForEach (delegate (GameNode node) {
+					if (node.thisNode == selectedObject) {
+						node.update();
+					}
+				});
+			}
+		}
+        
 
         Manager.packetStreams.ForEach(delegate (PacketStream packetStream) {
             if (packetStream != null) {
@@ -402,19 +415,4 @@ public class initialize : MonoBehaviour {
             Manager.nodes[nodeIndex].spawnPacketStream();
         }
     }
-
-    /*public class Tap : MonoBehaviour {
-
-        void OnEnable() {
-            Cardboard.SDK.OnTrigger += TriggerPulled;
-        }
-
-        void OnDisable() {
-            Cardboard.SDK.OnTrigger -= TriggerPulled;
-        }
-
-        void TriggerPulled() {
-            Debug.Log("The trigger was pulled!");
-        }
-    }*/
 }
