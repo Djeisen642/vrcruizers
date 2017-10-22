@@ -23,10 +23,11 @@ public static class Manager {
 	public static readonly float LOSS_CONDITION = 0.5f;
 	public static Constants.GameState gameState = Constants.GameState.ONGOING;
 	public static int DEAD_NODE_LOSS_CONDITION = Mathf.RoundToInt(LOSS_CONDITION * NUMBER_OF_NODES);
+    public static GameObject youWin, youLose, virusKillsSelf;
 
-    public static void gameFinishedWithImage(/*string imageName*/) {
+    public static void gameFinishedWithImage(GameObject GameObjectImage) {
         Camera.main.transform.LookAt(virusNode.thisNode.transform.position);
-        
+        GameObjectImage.SetActive(true);
     }
 
     public static void checkLossAndDealWithIt() {
@@ -35,6 +36,7 @@ public static class Manager {
 			Debug.Log("Lost");
 			gameState = Constants.GameState.GAMEOVER;
 			virusNode.showVirus();
+            gameFinishedWithImage(youLose);
 		} else {
 			float percentageRemaining = LOSS_CONDITION * nodes.Count / NUMBER_OF_NODES;
 			Debug.Log ("Check percentage " + percentageRemaining * LOSS_CONDITION);
@@ -45,9 +47,9 @@ public static class Manager {
 				Debug.Log("Virus killed self");
 				gameState = Constants.GameState.WIN;
 				virusNode.showVirus();
+                gameFinishedWithImage(virusKillsSelf);
 			}
 		}
-			
 	}
 
 	public static void checkWinAndDealWithIt(GameNode selectedGameNode) {
@@ -55,8 +57,7 @@ public static class Manager {
 		if (selectedGameNode.isVirus) {
 			Debug.Log("Picked Correctly");
 			gameState = Constants.GameState.WIN;
-            //gameFinishedWithImage("youWin");
-            GameObject.Find("youWin").SetActive(true);
+            gameFinishedWithImage(youWin);
         } else {
 			Debug.Log("Bad pick");
 		}
@@ -326,10 +327,14 @@ public class initialize : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
-        GameObject.Find("youWin").SetActive(false);
-        //GameObject.Find("youWin").GetComponent<Renderer>().enabled = false;
+        Manager.youWin = GameObject.Find("youWin");
+        Manager.youWin.SetActive(false);
+        Manager.youLose = GameObject.Find("youLose");
+        Manager.youLose.SetActive(false);
+        Manager.virusKillsSelf = GameObject.Find("virusKillsSelf");
+        Manager.virusKillsSelf.SetActive(false);
 
-        Dictionary <int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
+        Dictionary<int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
             { 0, Constants.Shape.SPHERE },
             { 1, Constants.Shape.SPHERE },
             { 2, Constants.Shape.SPHERE },
