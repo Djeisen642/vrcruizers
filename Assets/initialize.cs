@@ -71,6 +71,7 @@ public class GameNode : ScriptableObject {
     public bool isVirus;
 	public Constants.Shape thisShape;
 	public GameObject thisNode;
+	private Color savedColor;
 
     public void init(int nodeIndex, Constants.Shape shape, bool isVirus) {
         thisNode = GameObject.Find("node" + nodeIndex);
@@ -78,15 +79,18 @@ public class GameNode : ScriptableObject {
         thisShape = shape;
         switch (shape) {
             case Constants.Shape.SPHERE:
-                thisNode.GetComponent<Renderer>().material.color = Color.blue;
+				savedColor = Color.blue;
                 break;
             case Constants.Shape.CUBE:
-                thisNode.GetComponent<Renderer>().material.color = Color.yellow;
+				savedColor = Color.yellow;
                 break;
             case Constants.Shape.DIAMOND:
-                thisNode.GetComponent<Renderer>().material.color = Color.green;
+				savedColor = Color.green;
                 break;
         }
+
+		thisNode.GetComponent<Renderer>().material.color = savedColor;
+
         this.isVirus = isVirus;
         if (this.isVirus) {
             showVirus();
@@ -170,7 +174,24 @@ public class GameNode : ScriptableObject {
         });
     }
 
-    public void update() {
+	public Color getCurrentColor() {
+		return thisNode.GetComponent<Renderer> ().material.color;
+	}
+
+	public void highlighted() {
+		if (getCurrentColor () != Color.magenta) {
+			savedColor = getCurrentColor ();
+		}
+		thisNode.GetComponent<Renderer>().material.color = Color.magenta;
+	}
+
+	public void resetColor() {
+		if (savedColor != getCurrentColor ()) {
+			thisNode.GetComponent<Renderer> ().material.color = savedColor;
+		}
+	}
+
+    public void selected() {
 		Manager.checkWinAndDealWithIt(this);
     }
 }
@@ -437,27 +458,41 @@ public class initialize : MonoBehaviour {
 		}
 		GameObject selectedObject = null;
 
-		if (Input.GetMouseButtonDown(0)) {
+		bool clicked = false;
 
-			GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
-
-			Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
-			RaycastHit hit;
-			if (Physics.Raycast(ray, out hit)) {
-				selectedObject = hit.transform.gameObject;
-			}
-			else
-				Debug.Log("I'm looking at nothing!");
-			
-			if (selectedObject != null) {
-				Manager.nodes.ForEach (delegate (GameNode node) {
-					if (node.thisNode == selectedObject) {
-                        Debug.Log(node.nodeIndex);
-						node.update();
-					}
-				});
-			}
+		if (Input.GetMouseButtonDown (0)) {
+			clicked = true;
 		}
+
+		GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
+
+		Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
+		RaycastHit hit;
+		if (Physics.Raycast(ray, out hit)) {
+			selectedObject = hit.transform.gameObject;
+//			Debug.Log (selectedObject.name);
+		}
+		else
+			Debug.Log("I'm looking at nothing!");
+
+
+
+		Manager.nodes.ForEach (delegate (GameNode node) {
+			if (selectedObject != null) {
+				if (node.thisNode == selectedObject) {
+//					Debug.Log(node.nodeIndex);
+					if (clicked) {
+						node.selected();
+					} else {
+						node.highlighted();
+					}
+				} else {
+					node.resetColor();
+				}
+			} else {
+				node.resetColor();
+			}
+		});
         
 
         Manager.packetStreams.ForEach(delegate (PacketStream packetStream) {
