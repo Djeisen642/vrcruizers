@@ -127,7 +127,8 @@ public class GameNode : ScriptableObject {
     }
 
     public void update() {
-        if (Input.GetMouseButtonDown(0)) {
+        //if (Input.GetMouseButtonDown(0)) {
+        //if (GvrControllerInput.ClickButtonDown) {
             RaycastHit hitInfo = new RaycastHit();
             bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, Camera.main.nearClipPlane)), out hitInfo);
 
@@ -136,7 +137,7 @@ public class GameNode : ScriptableObject {
                     selected();
                 }
             }
-        }
+        //}
     }
 }
 
@@ -396,4 +397,19 @@ public class initialize : MonoBehaviour {
             Manager.nodes[nodeIndex].spawnPacketStream();
         }
     }
+
+    /*public class Tap : MonoBehaviour {
+
+        void OnEnable() {
+            Cardboard.SDK.OnTrigger += TriggerPulled;
+        }
+
+        void OnDisable() {
+            Cardboard.SDK.OnTrigger -= TriggerPulled;
+        }
+
+        void TriggerPulled() {
+            Debug.Log("The trigger was pulled!");
+        }
+    }*/
 }
