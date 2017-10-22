@@ -34,7 +34,8 @@ public static class Manager {
 		int deadNodes = NUMBER_OF_NODES - nodes.Count;
 		if (deadNodes >= Manager.DEAD_NODE_LOSS_CONDITION) { // lost
 			Debug.Log("Lost");
-			gameState = Constants.GameState.GAMEOVER;
+            GameObject.Find("sfxFailed").GetComponent<AudioSource>().Play();
+            gameState = Constants.GameState.GAMEOVER;
 			virusNode.showVirus();
             gameFinishedWithImage(youLose);
 		} else {
@@ -47,6 +48,7 @@ public static class Manager {
 				Debug.Log("Virus killed self");
 				gameState = Constants.GameState.WIN;
 				virusNode.showVirus();
+                GameObject.Find("sfxSuccess").GetComponent<AudioSource>().Play();
                 gameFinishedWithImage(virusKillsSelf);
 			}
 		}
@@ -58,6 +60,7 @@ public static class Manager {
 			Debug.Log("Picked Correctly");
 			gameState = Constants.GameState.WIN;
             gameFinishedWithImage(youWin);
+            GameObject.Find("sfxSuccess").GetComponent<AudioSource>().Play();
         } else {
 			Debug.Log("Bad pick");
 		}
@@ -92,9 +95,6 @@ public class GameNode : ScriptableObject {
 		thisNode.GetComponent<Renderer>().material.color = savedColor;
 
         this.isVirus = isVirus;
-        if (this.isVirus) {
-            showVirus();
-        }
     }
 
     public void addConnection(GameNode newConnection, float weight) {
