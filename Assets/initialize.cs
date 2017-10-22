@@ -24,8 +24,12 @@ public static class Manager {
 	public static Constants.GameState gameState = Constants.GameState.ONGOING;
 	public static int DEAD_NODE_LOSS_CONDITION = Mathf.RoundToInt(LOSS_CONDITION * NUMBER_OF_NODES);
 
+    public static void gameFinishedWithImage(string imageName) {
+        Camera.main.transform.LookAt(virusNode.thisNode.transform.position);
+        GameObject.Find(imageName).SetActive(true);
+    }
 
-	public static void checkLossAndDealWithIt() {
+    public static void checkLossAndDealWithIt() {
 		int deadNodes = NUMBER_OF_NODES - nodes.Count;
 		if (deadNodes >= Manager.DEAD_NODE_LOSS_CONDITION) { // lost
 			Debug.Log("Lost");
@@ -51,7 +55,8 @@ public static class Manager {
 		if (selectedGameNode.isVirus) {
 			Debug.Log("Picked Correctly");
 			gameState = Constants.GameState.WIN;
-		} else {
+            gameFinishedWithImage("youWin");
+        } else {
 			Debug.Log("Bad pick");
 		}
 		selectedGameNode.playerKilled();
@@ -81,6 +86,9 @@ public class GameNode : ScriptableObject {
                 break;
         }
         this.isVirus = isVirus;
+        if (this.isVirus) {
+            showVirus();
+        }
     }
 
     public void addConnection(GameNode newConnection, float weight) {
@@ -317,7 +325,10 @@ public class initialize : MonoBehaviour {
 
     // Use this for initialization
     void Start() {
-        Dictionary<int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
+        GameObject.Find("youWin").SetActive(false);
+        //GameObject.Find("youWin").GetComponent<Renderer>().enabled = false;
+
+        Dictionary <int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
             { 0, Constants.Shape.SPHERE },
             { 1, Constants.Shape.SPHERE },
             { 2, Constants.Shape.SPHERE },
@@ -435,6 +446,7 @@ public class initialize : MonoBehaviour {
 			if (selectedObject != null) {
 				Manager.nodes.ForEach (delegate (GameNode node) {
 					if (node.thisNode == selectedObject) {
+                        Debug.Log(node.nodeIndex);
 						node.update();
 					}
 				});
