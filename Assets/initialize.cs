@@ -464,11 +464,14 @@ public class initialize : MonoBehaviour {
 			clicked = true;
 		}
 
-		GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
+
 
 		Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
 		RaycastHit hit;
 		if (Physics.Raycast(ray, out hit)) {
+			if (clicked) {
+				GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
+			}
 			selectedObject = hit.transform.gameObject;
 //			Debug.Log (selectedObject.name);
 		}
