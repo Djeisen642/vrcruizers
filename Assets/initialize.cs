@@ -5,8 +5,8 @@ using UnityEngine;
 // Change animation type to legacy
 
 public class Constants {
-    public enum Shape { SQUARE, CIRCLE, PYRAMID };
 	public enum GameState { ONGOING, WIN, GAMEOVER };
+    public enum Shape { CUBE, SPHERE, DIAMOND };
 }
 
 public static class Utils {
@@ -17,7 +17,7 @@ public static class Utils {
 
 public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
-    public static readonly int NUMBER_OF_NODES = 13;
+    public static readonly int NUMBER_OF_NODES = 25;
     public static List<GameNode> nodes = new List<GameNode>(Manager.NUMBER_OF_NODES);
 	public static GameNode virusNode;
 	public static readonly float LOSS_CONDITION = 0.5f;
@@ -70,18 +70,17 @@ public class GameNode : ScriptableObject {
         this.nodeIndex = nodeIndex;
         thisShape = shape;
         switch (shape) {
-            case Constants.Shape.CIRCLE:
+            case Constants.Shape.SPHERE:
                 thisNode.GetComponent<Renderer>().material.color = Color.blue;
                 break;
-            case Constants.Shape.SQUARE:
+            case Constants.Shape.CUBE:
                 thisNode.GetComponent<Renderer>().material.color = Color.yellow;
                 break;
-
+            case Constants.Shape.DIAMOND:
+                thisNode.GetComponent<Renderer>().material.color = Color.green;
+                break;
         }
         this.isVirus = isVirus;
-//        if (this.isVirus) {
-//            thisNode.GetComponent<Renderer>().material.color = Color.red;
-//        }
     }
 
     public void addConnection(GameNode newConnection, float weight) {
@@ -206,11 +205,14 @@ public class PacketStream {
 		meshRenderer.material = originalStartingNode.thisNode.GetComponent<Renderer>().material;
 
         switch (originalStartingNode.thisShape) {
-            case Constants.Shape.CIRCLE:
+            case Constants.Shape.SPHERE:
                 packet.GetComponent<Renderer>().material.color = Color.blue;
                 break;
-            case Constants.Shape.SQUARE:
+            case Constants.Shape.CUBE:
                 packet.GetComponent<Renderer>().material.color = Color.yellow;
+                break;
+            case Constants.Shape.DIAMOND:
+                packet.GetComponent<Renderer>().material.color = Color.green;
                 break;
         }
 
@@ -315,19 +317,31 @@ public class initialize : MonoBehaviour {
     // Use this for initialization
     void Start() {
         Dictionary<int, Constants.Shape> shapeDict = new Dictionary<int, Constants.Shape>() {
-            { 0, Constants.Shape.CIRCLE },
-            { 1, Constants.Shape.CIRCLE },
-            { 2, Constants.Shape.CIRCLE },
-            { 3, Constants.Shape.SQUARE },
-            { 4, Constants.Shape.SQUARE },
-            { 5, Constants.Shape.SQUARE },
-            { 6, Constants.Shape.SQUARE },
-            { 7, Constants.Shape.SQUARE },
-            { 8, Constants.Shape.SQUARE },
-            { 9, Constants.Shape.SQUARE },
-            { 10, Constants.Shape.SQUARE },
-            { 11, Constants.Shape.SQUARE },
-            { 12, Constants.Shape.SQUARE }
+            { 0, Constants.Shape.SPHERE },
+            { 1, Constants.Shape.SPHERE },
+            { 2, Constants.Shape.SPHERE },
+            { 3, Constants.Shape.SPHERE },
+            { 4, Constants.Shape.SPHERE },
+            { 5, Constants.Shape.SPHERE },
+            { 6, Constants.Shape.SPHERE },
+            { 7, Constants.Shape.SPHERE },
+            { 8, Constants.Shape.CUBE },
+            { 9, Constants.Shape.CUBE },
+            { 10, Constants.Shape.CUBE },
+            { 11, Constants.Shape.CUBE },
+            { 12, Constants.Shape.CUBE },
+            { 13, Constants.Shape.CUBE },
+            { 14, Constants.Shape.CUBE },
+            { 15, Constants.Shape.CUBE },
+            { 16, Constants.Shape.CUBE },
+            { 17, Constants.Shape.DIAMOND },
+            { 18, Constants.Shape.DIAMOND },
+            { 19, Constants.Shape.DIAMOND },
+            { 20, Constants.Shape.DIAMOND },
+            { 21, Constants.Shape.DIAMOND },
+            { 22, Constants.Shape.DIAMOND },
+            { 23, Constants.Shape.DIAMOND },
+            { 24, Constants.Shape.DIAMOND }
         };
 
         int virusNodeIndex = Mathf.RoundToInt(Random.Range(0, Manager.NUMBER_OF_NODES - 1));
@@ -353,24 +367,40 @@ public class initialize : MonoBehaviour {
         //rb.velocity = new Vector3(0, 0.5f, 0);
 
         // add some connection
-
-        // connect spheres
-        addConnection(0, 1, 0.25f);
-        addConnection(1, 2, 0.25f);
-        addConnection(2, 3, 0.5f);
-        
-        addConnection(3, 5, 0.25f);
-        addConnection(8, 6, 0.25f);
-
-        addConnection(3, 11, 0.25f);
-        addConnection(4, 8, 0.25f);
-        addConnection(8, 11, 0.25f);
-
-        addConnection(12, 9, 0.25f);
-        addConnection(7, 12, 0.25f);
-        addConnection(2, 12, 0.25f);
-        addConnection(10, 12, 0.25f);
-
+        addConnection(22, 13, 1f);
+        addConnection(19, 22, 1f);
+        addConnection(15, 13, 1f);
+        addConnection(22, 21, 1f);
+        addConnection(21, 17, 1f);
+        addConnection(17, 18, 1f);
+        addConnection(23, 2, 1f);
+        addConnection(4, 5, 1f);
+        addConnection(10, 13, 1f);
+        addConnection(10, 9, 1f);
+        addConnection(16, 11, 1f);
+        addConnection(11, 14, 1f);
+        addConnection(12, 14, 1f);
+        addConnection(12, 13, 1f);
+        addConnection(12, 15, 1f);
+        addConnection(8, 11, 1f);
+        addConnection(11, 6, 1f);
+        addConnection(6, 0, 1f);
+        addConnection(3, 6, 1f);
+        addConnection(3, 0, 1f);
+        addConnection(22, 10, 1f);
+        addConnection(14, 15, 1f);
+        addConnection(8, 9, 1f);
+        addConnection(8, 1, 1f);
+        addConnection(1, 5, 1f);
+        addConnection(2, 7, 1f);
+        addConnection(23, 24, 1f);
+        addConnection(4, 20, 1f);
+        addConnection(5, 7, 1f);
+        addConnection(1, 3, 1f);
+        addConnection(19, 24, 1f);
+        addConnection(20, 17, 1f);
+        addConnection(17, 23, 1f);
+        addConnection(23, 20, 1f);
 
         // create lines
         Manager.nodes.ForEach(delegate (GameNode node) {
