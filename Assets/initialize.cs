@@ -131,17 +131,18 @@ public class GameNode : ScriptableObject {
     }
 
     public void update() {
-        //if (Input.GetMouseButtonDown(0)) {
-        //if (GvrControllerInput.ClickButtonDown) {
-            RaycastHit hitInfo = new RaycastHit();
-            bool hit = Physics.Raycast(Camera.main.ScreenPointToRay(new Vector3(Screen.width / 2, Screen.height / 2, Camera.main.nearClipPlane)), out hitInfo);
-
-            if (hit) {
-                if (hitInfo.transform.gameObject == thisNode) {
+        if (Input.GetMouseButtonDown(0)) {
+            Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
+            RaycastHit hit;
+            if (Physics.Raycast(ray, out hit)) {
+                if (hit.transform.gameObject == thisNode) {
+                    Debug.Log("I'm looking at " + hit.transform.name);
                     selected();
                 }
             }
-        //}
+            else
+                Debug.Log("I'm looking at nothing!");
+        }
     }
 }
 
