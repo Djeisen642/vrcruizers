@@ -24,9 +24,9 @@ public static class Manager {
 	public static Constants.GameState gameState = Constants.GameState.ONGOING;
 	public static int DEAD_NODE_LOSS_CONDITION = Mathf.RoundToInt(LOSS_CONDITION * NUMBER_OF_NODES);
 
-    public static void gameFinishedWithImage(string imageName) {
+    public static void gameFinishedWithImage(/*string imageName*/) {
         Camera.main.transform.LookAt(virusNode.thisNode.transform.position);
-        GameObject.Find(imageName).SetActive(true);
+        
     }
 
     public static void checkLossAndDealWithIt() {
@@ -55,7 +55,8 @@ public static class Manager {
 		if (selectedGameNode.isVirus) {
 			Debug.Log("Picked Correctly");
 			gameState = Constants.GameState.WIN;
-            gameFinishedWithImage("youWin");
+            //gameFinishedWithImage("youWin");
+            GameObject.Find("youWin").SetActive(true);
         } else {
 			Debug.Log("Bad pick");
 		}
