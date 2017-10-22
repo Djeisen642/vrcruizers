@@ -347,7 +347,7 @@ public class initialize : MonoBehaviour {
         // add some connection
 
         // connect spheres
-        addConnection(0, 1, 0.25f);
+        /*addConnection(0, 1, 0.25f);
         addConnection(1, 2, 0.25f);
         addConnection(2, 3, 0.5f);
         
@@ -361,7 +361,7 @@ public class initialize : MonoBehaviour {
         addConnection(12, 9, 0.25f);
         addConnection(7, 12, 0.25f);
         addConnection(2, 12, 0.25f);
-        addConnection(10, 12, 0.25f);
+        addConnection(10, 12, 0.25f);*/
 
 
         // create lines
