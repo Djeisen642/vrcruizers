@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+// Change animation type to legacy
+
 public class Constants {
     public enum Shape { SQUARE, CIRCLE, PYRAMID };
 	public enum GameState { ONGOING, WIN, GAMEOVER };
@@ -17,6 +19,7 @@ public static class Manager {
     public static List<PacketStream> packetStreams = new List<PacketStream>();
     public static readonly int NUMBER_OF_NODES = 13;
     public static List<GameNode> nodes = new List<GameNode>(Manager.NUMBER_OF_NODES);
+	public static GameNode virusNode;
 	public static readonly float LOSS_CONDITION = 0.5f;
 	public static Constants.GameState gameState = Constants.GameState.ONGOING;
 	public static int DEAD_NODE_LOSS_CONDITION = Mathf.RoundToInt(LOSS_CONDITION * NUMBER_OF_NODES);
@@ -27,12 +30,18 @@ public static class Manager {
 		if (deadNodes >= Manager.DEAD_NODE_LOSS_CONDITION) { // lost
 			Debug.Log("Lost");
 			gameState = Constants.GameState.GAMEOVER;
+			virusNode.showVirus();
 		} else {
 			float percentageRemaining = LOSS_CONDITION * nodes.Count / NUMBER_OF_NODES;
 			Debug.Log ("Check percentage " + percentageRemaining * LOSS_CONDITION);
 			Camera camera = Camera.main;
 			float shade = percentageRemaining + 0.5f;
 			camera.backgroundColor = new Color(shade, shade, shade);
+			if (Manager.virusNode.connections.Count == 0) {
+				Debug.Log("Virus killed self");
+				gameState = Constants.GameState.WIN;
+				virusNode.showVirus();
+			}
 		}
 			
 	}
@@ -45,15 +54,16 @@ public static class Manager {
 		} else {
 			Debug.Log("Bad pick");
 		}
+		selectedGameNode.playerKilled();
 	}
 }
 
 public class GameNode : ScriptableObject {
-    public GameObject thisNode;
     public List<GameNode> connections = new List<GameNode>();
     public int nodeIndex;
     public bool isVirus;
-    public Constants.Shape thisShape;
+	public Constants.Shape thisShape;
+	public GameObject thisNode;
 
     public void init(int nodeIndex, Constants.Shape shape, bool isVirus) {
         thisNode = GameObject.Find("node" + nodeIndex);
@@ -69,10 +79,9 @@ public class GameNode : ScriptableObject {
 
         }
         this.isVirus = isVirus;
-        if (this.isVirus) {
-            thisNode.GetComponent<Renderer>().material.color = Color.red;
-        }
-        //thisNode.renderer.material.color = new Color(1, 1, 1);
+//        if (this.isVirus) {
+//            thisNode.GetComponent<Renderer>().material.color = Color.red;
+//        }
     }
 
     public void addConnection(GameNode newConnection, float weight) {
@@ -86,9 +95,6 @@ public class GameNode : ScriptableObject {
     }
 
     public void spawnPacketStream() {
-        //GameObject newGOPacketStream = new GameObject();
-        //PacketStream newPacketStream = newGOPacketStream.AddComponent<PacketStream>();
-        //newPacketStream.init(this);
         new PacketStream(this);
     }
 
@@ -98,8 +104,7 @@ public class GameNode : ScriptableObject {
             connections[i].removeConnection(this);
         }
 
-        // explode
-
+		explode();
 
         thisNode.GetComponent<Renderer>().material.color = Color.black;
         // remove node
@@ -108,8 +113,36 @@ public class GameNode : ScriptableObject {
 		Manager.checkLossAndDealWithIt();
     }
 
-    public void playerKilled() {
+	public void implode() {
+		// explode
+		AudioClip clip = Resources.Load("Audio/explosion") as AudioClip;
+		AudioSource.PlayClipAtPoint(clip, Utils.cloneVector(thisNode.transform.position));
+	}
 
+	public void explode() {
+		// explode
+		AudioClip clip = Resources.Load("Audio/explosion") as AudioClip;
+		AudioSource.PlayClipAtPoint(clip, Utils.cloneVector(thisNode.transform.position));
+	}
+
+	public void showVirus() {
+		thisNode.GetComponent<Renderer>().material.color = Color.red;
+	}
+
+    public void playerKilled() {
+		if (isVirus) {
+			// implode
+			implode();
+		} else {
+			// explode
+			for(int i = 0; i < connections.Count; i++) {
+				if (!connections [i].isVirus) {
+					connections[i].die ();
+				}
+			}
+			die();
+
+		}
     }
 
     public void createLines() {
@@ -126,10 +159,6 @@ public class GameNode : ScriptableObject {
                 newLine.material = Resources.Load("Materials/StandardMaterial") as Material;
             }
         });
-    }
-
-    public void selected() {
-        thisNode.GetComponent<Renderer>().material.color = Color.green;
     }
 
     public void update() {
@@ -166,23 +195,10 @@ public class PacketStream {
 
         for (int i = 0; i < PACKET_LENGTH; i++) {
             times.Add(i * 0.15f);
-            //times.Add(i);
         }
     }
 
     public void sendNewPacket() {
-//        var primitive = PrimitiveType.Sphere;
-//        switch (originalStartingNode.thisShape) {
-//            case Constants.Shape.CIRCLE:
-//                primitive = PrimitiveType.Sphere;
-//                break;
-//            case Constants.Shape.SQUARE:
-//                primitive = PrimitiveType.Cube;
-//                break;
-//
-//        }
-
-
 		GameObject packet = new GameObject();
 		MeshFilter meshFilter = packet.AddComponent<MeshFilter>();
 		meshFilter.sharedMesh = originalStartingNode.thisNode.GetComponent<MeshFilter>().mesh;
@@ -277,15 +293,11 @@ public class PacketStream {
                 GameObject.Destroy(packet);
             });
             Manager.packetStreams.Remove(this);
-
-            //Debug.Log("Boom");
-
         }
     }
 }
 
 public class initialize : MonoBehaviour {
-    //public List<GameNode> nodes = new List<GameNode>(40);
     public static readonly float TIME_BETWEEN_PACKET_STREAMS_IN_S = 2f;
 
     private float timeUntilNextPacketStream = 0;
@@ -318,7 +330,7 @@ public class initialize : MonoBehaviour {
             { 12, Constants.Shape.SQUARE }
         };
 
-        int virusNode = Mathf.RoundToInt(Random.Range(0, Manager.NUMBER_OF_NODES - 1));
+        int virusNodeIndex = Mathf.RoundToInt(Random.Range(0, Manager.NUMBER_OF_NODES - 1));
 
         // create nodes
         for (int i = 0; i < Manager.NUMBER_OF_NODES; i++) {
@@ -328,11 +340,13 @@ public class initialize : MonoBehaviour {
         // find nodes
         for (int i = 0; i < Manager.NUMBER_OF_NODES; i++) {
             Manager.nodes[i] = ScriptableObject.CreateInstance<GameNode>();
-            Manager.nodes[i].init(i, shapeDict[i], virusNode == i);
+			Manager.nodes[i].init(i, shapeDict[i], virusNodeIndex == i);
             /*Rigidbody rb = node.GetComponent<Rigidbody>();
             System.Random random = new System.Random();
             rb.velocity = new Vector3((float)(random.NextDouble())/2, (float) (random.NextDouble())/2, (float)(random.NextDouble())/2); // range 0.0 to 1.0*/
         }
+
+		Manager.virusNode = Manager.nodes[virusNodeIndex];
 
         //node1 = GameObject.Find("node1");
         //Rigidbody rb = node1.GetComponent<Rigidbody>();
@@ -374,15 +388,15 @@ public class initialize : MonoBehaviour {
 			return;
 		}
 		GameObject selectedObject = null;
+
 		if (Input.GetMouseButtonDown(0)) {
+
+			GameObject.Find("sfxClickAttempt").GetComponent<AudioSource>().Play();
+
 			Ray ray = Camera.main.ViewportPointToRay(new Vector3(0.5F, 0.5F, 0));
 			RaycastHit hit;
 			if (Physics.Raycast(ray, out hit)) {
 				selectedObject = hit.transform.gameObject;
-//				if (hit.transform.gameObject == thisNode) {
-//					Debug.Log("I'm looking at " + hit.transform.name);
-//					selected();
-//				}
 			}
 			else
 				Debug.Log("I'm looking at nothing!");
@@ -402,10 +416,6 @@ public class initialize : MonoBehaviour {
                 packetStream.update();
             }
         });
-
-        //Manager.timers.ForEach(delegate (GameTimer timer) {
-        //    timer.update();
-        //});
 
         timeUntilNextPacketStream -= Time.deltaTime;
 
